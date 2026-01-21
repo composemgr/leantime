@@ -1,0 +1,55 @@
+# nginx proxy address - http://172.17.0.1:8077
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "5m"
+    max-file: "1"
+
+services:
+  leantime:
+    image: leantime/leantime:latest
+    container_name: leantime-app
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - leantime
+    ports:
+      - "8077:80"
+    environment:
+      TZ: ${TZ:-America/New_York}
+    volumes:
+      - ./rootfs/data/leantime:/data
+      - ./rootfs/config/leantime:/config
+    depends_on:
+      - leantime-db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  leantime-db:
+    image: mariadb:11
+    container_name: leantime-db
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - leantime
+    environment:
+      TZ: ${TZ:-America/New_York}
+      MARIADB_DATABASE: ${DB_CREATE_DATABASE_NAME:-leantime}
+      MARIADB_USER: ${DB_USER_NAME:-leantime}
+      MARIADB_PASSWORD: ${DB_USER_PASS:-changeme_db_password}
+      MARIADB_ROOT_PASSWORD: ${DB_ADMIN_PASS:-changeme_root_password}
+    volumes:
+      - ./rootfs/db/mariadb/leantime:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  leantime:
+    external: false
