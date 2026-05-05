@@ -50,9 +50,9 @@ See `docker-compose.yaml` for complete list of configurable options.
 
 ## 📂 Volumes
 
-- `./rootfs/data/leantime` - Data storage
-- `./rootfs/config/leantime` - Data storage
-- `./rootfs/data/db/mariadb/leantime` - Data storage
+- `./volumes/data/leantime` - Data storage
+- `./volumes/config/leantime` - Data storage
+- `./volumes/data/db/mariadb/leantime` - Data storage
 
 ## 🔐 Security
 
