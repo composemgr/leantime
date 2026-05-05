@@ -19,8 +19,8 @@ services:
     environment:
       TZ: ${TZ:-America/New_York}
     volumes:
-      - ./rootfs/data/leantime:/data
-      - ./rootfs/config/leantime:/config
+      - ./volumes/data/leantime:/data
+      - ./volumes/config/leantime:/config
     depends_on:
       - leantime-db
     healthcheck:
@@ -43,7 +43,7 @@ services:
       MARIADB_PASSWORD: ${DB_USER_PASS:-changeme_db_password}
       MARIADB_ROOT_PASSWORD: ${DB_ADMIN_PASS:-changeme_root_password}
     volumes:
-      - ./rootfs/data/db/mariadb/leantime:/var/lib/mysql
+      - ./volumes/data/db/mariadb/leantime:/var/lib/mysql
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 30s
