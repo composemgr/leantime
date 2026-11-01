@@ -1,0 +1,83 @@
+name: leantime
+x-logging: &default-logging
+  options:
+    max-size: '5m'
+    max-file: '1'
+  driver: json-file
+
+services:
+  app:
+    image: leantime/leantime:latest
+    container_name: leantime-app
+    domainname: ${BASE_DOMAIN_NAME:-example.com}
+    hostname: ${BASE_HOST_NAME:-$HOSTNAME}
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+      CONTAINER_NAME: leantime-app
+      HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
+      LEAN_DB_HOST: leantime-db
+      LEAN_DB_PORT: 3306
+      LEAN_DB_DATABASE: ${DB_CREATE_DATABASE_NAME:-leantime}
+      LEAN_DB_USER: ${DB_USER_NAME:-leantime}
+      LEAN_DB_PASSWORD: ${DB_USER_PASS:-replace-with-a-random-password}
+      LEAN_APP_URL: https://${BASE_HOST_NAME:-$HOSTNAME}
+      LEAN_SESSION_PASSWORD: ${APP_SECRET_KEY:-replace-with-a-random-16-byte-hex-string}
+      LEAN_EMAIL_RETURN: ${EMAIL_SERVER_MAIL_FROM:-no-reply@example.com}
+      LEAN_EMAIL_USE_SMTP: 1
+      LEAN_EMAIL_SMTP_HOST: ${EMAIL_SERVER_HOST:-172.17.0.1}
+      LEAN_EMAIL_SMTP_PORT: ${EMAIL_SERVER_PORT:-587}
+      LEAN_EMAIL_SMTP_USERNAME: ${EMAIL_SERVER_LOGIN_NAME:-}
+      LEAN_EMAIL_SMTP_PASSWORD: ${EMAIL_SERVER_LOGIN_PASS:-}
+    volumes:
+      - './volumes/data/leantime:/var/www/html/userfiles:z'
+      - './volumes/config/leantime:/var/www/html/public/userfiles:z'
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8080']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - 'cloudflare.enable=true'
+      - 'cloudflare.service=http://leantime-app:8080'
+      - 'cloudflare.hostname=${BASE_HOST_NAME:-$HOSTNAME}'
+    networks:
+      - leantime
+      - cloudflare
+
+  db:
+    image: mariadb:latest
+    container_name: leantime-db
+    domainname: ${BASE_DOMAIN_NAME:-example.com}
+    hostname: leantime-db
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+      CONTAINER_NAME: leantime-db
+      MARIADB_DATABASE: ${DB_CREATE_DATABASE_NAME:-leantime}
+      MARIADB_USER: ${DB_USER_NAME:-leantime}
+      MARIADB_PASSWORD: ${DB_USER_PASS:-replace-with-a-random-password}
+      MARIADB_ROOT_PASSWORD: ${DB_ADMIN_PASS:-replace-with-a-random-password}
+    volumes:
+      - './volumes/db/mariadb/leantime:/var/lib/mysql:z'
+    healthcheck:
+      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - leantime
+
+networks:
+  leantime:
+    name: leantime
+    external: false
+  cloudflare:
+    external: true
